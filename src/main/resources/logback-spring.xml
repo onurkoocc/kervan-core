@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- JSON lines on stdout, and appended to $LOG_FILE when it is set (SPEC §6). -->
+<configuration>
+  <appender name="JSON" class="kervan.core.logging.JsonLinesAppender">
+    <service>core</service>
+    <file>${LOG_FILE:-}</file>
+  </appender>
+
+  <root level="INFO">
+    <appender-ref ref="JSON"/>
+  </root>
+</configuration>

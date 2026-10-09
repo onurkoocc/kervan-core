@@ -1,0 +1,502 @@
+{
+  "components": {
+    "parameters": {
+      "trackingNo": {
+        "description": "KRV followed by eight digits. Any other value is simply not found.",
+        "in": "path",
+        "name": "trackingNo",
+        "required": true,
+        "schema": {
+          "type": "string"
+        }
+      }
+    },
+    "responses": {
+      "Unauthorized": {
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        },
+        "description": "unauthorized: X-Service-Token is missing or wrong."
+      }
+    },
+    "schemas": {
+      "Delivery": {
+        "properties": {
+          "attempts": {
+            "format": "int32",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "deliveryDate": {
+            "format": "date",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "SCHEDULED",
+              "RESCHEDULED",
+              "DELIVERED",
+              "FAILED"
+            ],
+            "type": "string"
+          },
+          "trackingNo": {
+            "pattern": "^KRV[0-9]{8}$",
+            "type": "string"
+          },
+          "window": {
+            "enum": [
+              "MORNING",
+              "AFTERNOON",
+              "EVENING"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "trackingNo",
+          "deliveryDate",
+          "window",
+          "status",
+          "attempts"
+        ],
+        "type": "object"
+      },
+      "Error": {
+        "properties": {
+          "error": {
+            "description": "A stable error code, for example not_reschedulable.",
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "error",
+          "message"
+        ],
+        "type": "object"
+      },
+      "RescheduleRequest": {
+        "properties": {
+          "newDate": {
+            "format": "date",
+            "type": "string"
+          },
+          "reason": {
+            "type": "string"
+          },
+          "verificationCode": {
+            "description": "The last four digits of the recipient's phone.",
+            "pattern": "^[0-9]{4}$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "newDate",
+          "verificationCode"
+        ],
+        "type": "object"
+      },
+      "Shipment": {
+        "properties": {
+          "destinationCity": {
+            "type": "string"
+          },
+          "estimatedDelivery": {
+            "description": "The delivery's date; null when no delivery is scheduled.",
+            "format": "date",
+            "nullable": true,
+            "type": "string"
+          },
+          "lastEvent": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ShipmentEvent"
+              }
+            ],
+            "description": "The latest shipment event; null when there is none.",
+            "nullable": true
+          },
+          "originCity": {
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "CREATED",
+              "IN_TRANSIT",
+              "OUT_FOR_DELIVERY",
+              "DELIVERED",
+              "RETURNED"
+            ],
+            "type": "string"
+          },
+          "trackingNo": {
+            "pattern": "^KRV[0-9]{8}$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "trackingNo",
+          "status",
+          "originCity",
+          "destinationCity",
+          "estimatedDelivery",
+          "lastEvent"
+        ],
+        "type": "object"
+      },
+      "ShipmentEvent": {
+        "properties": {
+          "at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "at",
+          "description"
+        ],
+        "type": "object"
+      },
+      "Ticket": {
+        "properties": {
+          "category": {
+            "enum": [
+              "DAMAGED",
+              "LOST",
+              "DELAY",
+              "OTHER"
+            ],
+            "type": "string"
+          },
+          "channel": {
+            "enum": [
+              "agent",
+              "web",
+              "phone"
+            ],
+            "type": "string"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "description": {
+            "maxLength": 2000,
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "OPEN",
+              "CLOSED"
+            ],
+            "type": "string"
+          },
+          "ticketId": {
+            "pattern": "^TCK-[0-9]{6}$",
+            "type": "string"
+          },
+          "trackingNo": {
+            "nullable": true,
+            "type": "string"
+          }
+        },
+        "required": [
+          "ticketId",
+          "trackingNo",
+          "category",
+          "description",
+          "status",
+          "channel",
+          "createdAt"
+        ],
+        "type": "object"
+      },
+      "TicketRequest": {
+        "properties": {
+          "category": {
+            "enum": [
+              "DAMAGED",
+              "LOST",
+              "DELAY",
+              "OTHER"
+            ],
+            "type": "string"
+          },
+          "channel": {
+            "enum": [
+              "agent",
+              "web",
+              "phone"
+            ],
+            "type": "string"
+          },
+          "description": {
+            "maxLength": 2000,
+            "minLength": 1,
+            "type": "string"
+          },
+          "trackingNo": {
+            "description": "Optional; when given, the shipment must exist.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "category",
+          "description",
+          "channel"
+        ],
+        "type": "object"
+      }
+    },
+    "securitySchemes": {
+      "serviceToken": {
+        "description": "The shared secret SERVICE_TOKEN.",
+        "in": "header",
+        "name": "X-Service-Token",
+        "type": "apiKey"
+      }
+    }
+  },
+  "info": {
+    "description": "Domain API and system of record of Kervan (SPEC §5). Every operation needs the X-Service-Token header; GET /actuator/health does not and is not part of this API. Errors are {\"error\": \"<code>\", \"message\": \"...\"}.",
+    "title": "Kervan Core API",
+    "version": "0.1.0"
+  },
+  "openapi": "3.0.3",
+  "paths": {
+    "/api/v1/shipments/{trackingNo}": {
+      "get": {
+        "operationId": "getShipment",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/trackingNo"
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Shipment"
+                }
+              }
+            },
+            "description": "The shipment. It carries no personal data."
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "not_found: no shipment has this tracking number."
+          }
+        },
+        "summary": "Look up a shipment"
+      }
+    },
+    "/api/v1/shipments/{trackingNo}/reschedule": {
+      "post": {
+        "description": "Checks, in this order: the shipment exists (404), verificationCode is the last four digits of the recipient's phone (403), the shipment is CREATED or IN_TRANSIT and has a delivery (409), newDate is at least tomorrow and at most 14 days ahead in Europe/Istanbul (400). On success the delivery gets the new date and status RESCHEDULED, and a shipment event is appended. The reason is accepted but not stored.",
+        "operationId": "rescheduleDelivery",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/trackingNo"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RescheduleRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Delivery"
+                }
+              }
+            },
+            "description": "The rescheduled delivery."
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "invalid_date: newDate is missing, not a YYYY-MM-DD date, or outside [tomorrow, today + 14 days] in Europe/Istanbul. invalid_request: the body is not JSON."
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "verification_failed: verificationCode is not the last four digits of the recipient's phone."
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "not_found: no shipment has this tracking number."
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "not_reschedulable: the shipment is OUT_FOR_DELIVERY, DELIVERED or RETURNED, or has no delivery."
+          }
+        },
+        "summary": "Move a shipment's delivery to another date"
+      }
+    },
+    "/api/v1/tickets": {
+      "post": {
+        "operationId": "openTicket",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TicketRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Ticket"
+                }
+              }
+            },
+            "description": "The new ticket, status OPEN.",
+            "headers": {
+              "Location": {
+                "description": "/api/v1/tickets/{ticketId}",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "invalid_request: the body is not JSON, or category, description or channel is missing or invalid."
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "not_found: trackingNo was given and no shipment has it."
+          }
+        },
+        "summary": "Open a support ticket"
+      }
+    },
+    "/api/v1/tickets/{ticketId}": {
+      "get": {
+        "operationId": "getTicket",
+        "parameters": [
+          {
+            "description": "TCK- followed by six digits.",
+            "in": "path",
+            "name": "ticketId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Ticket"
+                }
+              }
+            },
+            "description": "The ticket."
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "not_found: no ticket has this id."
+          }
+        },
+        "summary": "Look up a ticket"
+      }
+    }
+  },
+  "security": [
+    {
+      "serviceToken": []
+    }
+  ],
+  "servers": [
+    {
+      "url": "http://core:8080"
+    }
+  ]
+}
