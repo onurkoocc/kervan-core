@@ -1,5 +1,8 @@
 # kervan-core
 
+> Part of **[Kervan](https://github.com/onurkoocc/kervan-system)**, a fictional cargo company built as a
+> reference for backends where AI agents can safely act on a customer's behalf. Start there.
+
 The domain API and system of record of **Kervan**, the fictional cargo and delivery company
 that Mandate's brownfield work is built and measured on. It owns shipments, deliveries,
 tickets and customers in PostgreSQL. All data is synthetic.
